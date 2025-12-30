@@ -3,96 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convertidor de Imágenes a JPG</title>
+    <title>Convertidor a JPG Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        #result {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-        .download-link {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 10px;
-            width: fit-content;
-        }
-        .download-link:hover {
-            background-color: #45a049;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 40px; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        h1 { color: #1c1e21; margin-bottom: 20px; font-size: 24px; }
+        input[type="file"] { margin: 20px 0; width: 100%; }
+        .btn { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: 0.3s; }
+        .btn:hover { background: #0056b3; }
+        .btn-zip { background: #28a745; margin-top: 15px; display: none; }
+        .btn-zip:hover { background: #218838; }
+        #status { margin-top: 15px; color: #606770; font-size: 14px; }
     </style>
 </head>
 <body>
-    <h1>Convertidor de Imágenes a JPG</h1>
-
-    <input type="file" id="imageInput" accept="image/*" multiple>
-    <button id="convertButton">Convertir a JPG</button>
-
-    <div id="result"></div>
+    <div class="card">
+        <h1>Convertidor JPG</h1>
+        <p>Selecciona tus imágenes</p>
+        
+        <input type="file" id="imageInput" accept="image/*" multiple>
+        <button id="convertButton" class="btn">Convertir Imágenes</button>
+        <button id="downloadZip" class="btn btn-zip">Descargar Todo en .ZIP</button>
+        
+        <div id="status"></div>
+    </div>
 
     <script>
-        document.getElementById("convertButton").addEventListener("click", function() {
-            const fileInput = document.getElementById("imageInput");
-            const resultDiv = document.getElementById("result");
+        const zip = new JSZip();
+        const btnConvert = document.getElementById("convertButton");
+        const btnZip = document.getElementById("downloadZip");
+        const status = document.getElementById("status");
 
-            if (!fileInput.files || fileInput.files.length === 0) {
-                alert("Por favor, selecciona al menos una imagen.");
-                return;
-            }
+        btnConvert.addEventListener("click", async function() {
+            const files = document.getElementById("imageInput").files;
+            if (files.length === 0) return alert("Selecciona imágenes primero");
 
-            resultDiv.innerHTML = "<h3>Enlaces de descarga:</h3>"; 
-
-            const files = fileInput.files;
+            status.textContent = "Procesando... espera por favor.";
+            btnConvert.disabled = true;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const reader = new FileReader();
+                const bitmap = await createImageBitmap(file);
+                const canvas = document.createElement("canvas");
+                canvas.width = bitmap.width;
+                canvas.height = bitmap.height;
+                const ctx = canvas.getContext("2d");
+                
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(bitmap, 0, 0);
 
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.src = event.target.result;
-
-                    img.onload = function() {
-                        const canvas = document.createElement("canvas");
-                        const ctx = canvas.getContext("2d");
-
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-
-                        
-                        ctx.fillStyle = "#FFFFFF";
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                        
-                        ctx.drawImage(img, 0, 0, img.width, img.height);
-
-                        
-                        const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.9);
-
-                        
-                        const filename = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
-
-                        
-                        const downloadLink = document.createElement("a");
-                        downloadLink.href = jpegDataUrl;
-                        downloadLink.download = filename;
-                        
-                        downloadLink.textContent = `Descargar ${filename}`;
-                        downloadLink.className = "download-link";
-
-                        resultDiv.appendChild(downloadLink);
-                    };
-                };
-
-                reader.readAsDataURL(file);
+                const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+                const name = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                
+                zip.file(name, blob);
+                status.textContent = `Convertidas: ${i + 1} de ${files.length}`;
             }
+
+            status.textContent = "¡Listo! Ya puedes descargar el paquete.";
+            btnZip.style.display = "block";
+            btnConvert.disabled = false;
+        });
+
+        btnZip.addEventListener("click", function() {
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = "imagenes_convertidas.zip";
+                link.click();
+            });
         });
     </script>
 </body>
