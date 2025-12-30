@@ -24,7 +24,7 @@
         
         <input type="file" id="imageInput" accept="image/*" multiple>
         <button id="convertButton" class="btn">Convertir Imágenes</button>
-        <button id="downloadZip" class="btn btn-zip">Descargar Todo en .ZIP</button>
+        <button id="downloadZip" class="btn btn-zip">Descargar Todo en ZIP</button>
         
         <div id="status"></div>
     </div>
@@ -61,7 +61,7 @@
                 status.textContent = `Convertidas: ${i + 1} de ${files.length}`;
             }
 
-            status.textContent = "¡Listo! Ya puedes descargar el paquete.";
+            status.textContent = "Listo.";
             btnZip.style.display = "block";
             btnConvert.disabled = false;
         });
